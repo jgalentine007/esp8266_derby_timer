@@ -1,13 +1,18 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
+#include <Wire.h>
+#include "Adafruit_LEDBackpack.h"
+#include "Adafruit_GFX.h"
 
 const char *ssid = "Derby";
+const char *password = "derbytimer";
 ESP8266WebServer server(80);
 
 const int numLanes = 4;
 const int lanePin[] = {14, 12, 13, 15};
 const int ledPin =  0;
+const int piezoPin = 2;   // disconnect from ground when uploading via toggle switch
 
 volatile bool raceStarted = false;
 unsigned long startTime = 0;
@@ -17,15 +22,21 @@ volatile unsigned long laneTime[numLanes];
 volatile bool laneFinished[numLanes];
 volatile int finishedOrder[numLanes];
 
+Adafruit_AlphaNum4 alpha4 = Adafruit_AlphaNum4();
 
 void handleRoot() {
-  String response = "<HTML><BODY>\n";
+  String response = "<HTML><BODY><font size=\"6\">\n";
   
   for(int i=0; i<numLanes; i++)
     response += "Lane " + String(i) + ":" + String((laneTime[i] - startTime) / 1000.00) + "s<br>\n";
-  response += "Race Started:" + String(raceStarted) + "<br>\n";
-  response += "<input type=\"button\" onclick=\"location.href='/NewRace';\" value=\"New Race\"/>";
-  response += "</BODY></HTML>";
+
+  if (raceStarted)
+    response += "<br>Race Started<br><br>\n";
+  else
+    response += "<br>Race Stopped<br><br>\n";
+    
+  response += "<a href='/NewRace'>NEW RACE</a> - <a href='/'>REFRESH</a>";
+  response += "</font></BODY></HTML>";
   server.send(200, "text/html", response);
 }
 
@@ -46,7 +57,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.print("Configuring access point...");
-  WiFi.softAP(ssid);
+  WiFi.softAP(ssid, password);
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(myIP);
@@ -57,6 +68,7 @@ void setup() {
   
   // initialize the LED pin as an output:
   pinMode(ledPin, OUTPUT);
+  pinMode(piezoPin, OUTPUT);
   
   // initialize the pushbutton pin as an input:
   pinMode(lanePin[0], INPUT_PULLUP);
@@ -74,6 +86,29 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(lanePin[3]), finish3, RISING); // GPIO 15 has a PULL DOWN resistor attached to it (switch must be connected to +3v3)
 
   digitalWrite(ledPin, HIGH); // Turn LED OFF (it is opposite)  
+
+  alpha4.begin(0x70);  // pass in the address
+
+  alpha4.writeDigitRaw(3, 0x0);
+  alpha4.writeDigitRaw(0, 0xFFFF);
+  alpha4.writeDisplay();
+  delay(200);
+  alpha4.writeDigitRaw(0, 0x0);
+  alpha4.writeDigitRaw(1, 0xFFFF);
+  alpha4.writeDisplay();
+  delay(200);
+  alpha4.writeDigitRaw(1, 0x0);
+  alpha4.writeDigitRaw(2, 0xFFFF);
+  alpha4.writeDisplay();
+  delay(200);
+  alpha4.writeDigitRaw(2, 0x0);
+  alpha4.writeDigitRaw(3, 0xFFFF);
+  alpha4.writeDisplay();
+  delay(200);
+  
+  alpha4.clear();
+alpha4.writeDisplay();
+
 }
 
 void loop() {
@@ -87,15 +122,44 @@ void blinkLed(){
   delay(1000);
 }
 
+void alpha4Clear(){
+  alpha4.writeDigitRaw(1, 0x0);
+  alpha4.writeDigitRaw(2, 0x0);
+  alpha4.writeDigitRaw(3, 0x0);
+  alpha4.writeDigitRaw(4, 0x0);
+  alpha4.writeDisplay();
+}
+
 void startRace(){
+  alpha4Clear();
   // 3 2 1 go beep
-  blinkLed();
-  blinkLed();
-  blinkLed();
-  digitalWrite(ledPin, LOW);
-  
-  raceStarted = true;
+  //blinkLed();
+  //blinkLed();
+  //blinkLed();
+  //digitalWrite(ledPin, LOW);
+  alpha4.writeDigitAscii(0, '3');
+  alpha4.writeDisplay();
+  tone(piezoPin, 3700, 500);
+  delay(1000);
+  alpha4.writeDigitAscii(1, '2');
+  alpha4.writeDisplay();
+  tone(piezoPin, 3700, 500);
+  delay(1000);
+  alpha4.writeDigitAscii(2, '1');
+  alpha4.writeDisplay();
+  tone(piezoPin, 3700, 500);  
+  delay(1000);
   startTime = millis();
+  alpha4.writeDigitRaw(0, 0x0);
+  alpha4.writeDigitAscii(1, 'G');
+  alpha4.writeDigitAscii(2, 'O');
+  alpha4.writeDigitRaw(3, 0x0);
+  alpha4.writeDisplay();
+  tone(piezoPin, 4100, 2000);
+  delay(2000);
+  alpha4Clear();  
+  raceStarted = true;
+  
   carsFinished = 0;
   for (int i=0; i<numLanes; i++){
     laneTime[i] = startTime;
@@ -108,6 +172,9 @@ void finish(int lane){
     laneTime[lane] = millis();
     laneFinished[lane] = true;
     carsFinished++;
+   
+    alpha4.writeDigitAscii(lane, carsFinished + '0');    
+    alpha4.writeDisplay();
     finishedOrder[lane] = carsFinished;
     if (carsFinished == numLanes){
       raceStarted = false;
