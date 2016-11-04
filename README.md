@@ -14,20 +14,20 @@ Software Requirements:
 * Arduino IDE
 * Arduino ESP8266 board configuration
 * Adafruit LEDBackpack, GFX libraries
-* Derby_timer sketch
+* Derby_timer sketch 
 
 
-**Uploading Switch**
-Pin 2 to piezo leg a
-Piezo leg b to switch1 pole left/right
-Switch1 pole center to ground
+**Uploading Switch**  
+1. Pin 2 to piezo leg a  
+2. Piezo leg b to switch1 pole left/right  
+3. Switch1 pole center to ground  
 
-**Power Switch**
-EN pin to switch2 pole left/right
-Switch2 pole center to ground
+**Power Switch**  
+1. EN pin to switch2 pole left/right  
+2. Switch2 pole center to ground  
 
-**Inputs**
-Pin 14 to micro switch to ground
-Pin 12 to micro switch to ground
-Pin 13 to micro switch to ground
-Pin 15 to micro switch to 3v3
+**Inputs**  
+1. Pin 14 to micro switch to ground  
+2. Pin 12 to micro switch to ground  
+3. Pin 13 to micro switch to ground  
+4. Pin 15 to micro switch to 3v3  
