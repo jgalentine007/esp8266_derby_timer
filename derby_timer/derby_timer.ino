@@ -83,7 +83,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(lanePin[0]), finish0, FALLING);
   attachInterrupt(digitalPinToInterrupt(lanePin[1]), finish1, FALLING);
   attachInterrupt(digitalPinToInterrupt(lanePin[2]), finish2, FALLING);
-  attachInterrupt(digitalPinToInterrupt(lanePin[3]), finish3, RISING); // GPIO 15 has a PULL DOWN resistor attached to it (switch must be connected to +3v3)
+  attachInterrupt(digitalPinToInterrupt(lanePin[3]), finish3, FALLING); // GPIO 15 has a PULL DOWN resistor attached to it (switch must be connected to +3v3)
 
   digitalWrite(ledPin, HIGH); // Turn LED OFF (it is opposite)  
 
