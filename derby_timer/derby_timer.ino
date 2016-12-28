@@ -46,6 +46,31 @@ void newRace() {
   server.send(307, "text/plain", "");
 }
 
+void apiNewRace() {
+  startRace();
+  server.send(200, "application/json", "");
+}
+
+void apiResults() {
+  String response = "{\"LaneTimes\":[";
+  
+  for(int i=0; i<numLanes; i++){
+    response += String((laneTime[i] - startTime) / 1000.00);
+    if(i < numLanes-1)
+      response += ",";
+  }
+
+  response += "], \"RaceStarted\":";
+
+  if (raceStarted)
+    response += "true";
+  else
+    response += "false";
+
+  response += "}";
+  server.send(200, "application/json", response);
+}
+
 void setup() {
   for (int i=0; i<numLanes; i++){
     finishedOrder[i] = 0;
@@ -63,6 +88,8 @@ void setup() {
   Serial.println(myIP);
   server.on("/", handleRoot);
   server.on("/NewRace", newRace);
+  server.on("/api/NewRace", apiNewRace);
+  server.on("/api/Results", apiResults);
   server.begin();
   Serial.println("HTTP server started");
   
@@ -184,15 +211,15 @@ void finish(int lane){
 }
 
 void finish0() {
-  finish(0);
+  finish(2);
 }
 
 void finish1() {
-  finish(1);
+  finish(0);
 }
 
 void finish2() {
-  finish(2);
+  finish(1);
 }
 
 void finish3() {
