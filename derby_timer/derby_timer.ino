@@ -82,7 +82,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.print("Configuring access point...");
-  WiFi.softAP(ssid, password);
+  WiFi.softAP(ssid, password,1);
   IPAddress myIP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(myIP);
