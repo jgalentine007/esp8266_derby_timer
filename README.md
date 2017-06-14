@@ -1,11 +1,13 @@
 **ESP8266 Pinewood Derby Timer**
 
-Build an affordable WiFi-controlled Pinewood Derby timer for your Cub Scout or Boy Scout pack!
+Build an affordable WiFi-controlled Pinewood Derby timer for your Cub Scout or Boy Scout pack! Use the optional windows race software or connect directly to the derby timer webserver over WiFi.
+
+![Screenshot](timer.jpg)
 
 Hardware Requirements:
 * ESP8266 development board (Adafruit Feather Huzzah)
 * Adafruit Feather LED Alphanumeric Display (I2C)
-* Micro switches (Adafruit NO game switches)
+* Infrared breakbeam sensors
 * Proto board (Adafruit Tin sized board)
 * Wire block terminals (Adafruit 2.54mm x.1mm terminal blocks)
 * Piezo (3v+)
