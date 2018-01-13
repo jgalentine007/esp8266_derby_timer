@@ -11,8 +11,10 @@ const int numLanes = 4;
 const int lanePin[] = {14, 12, 13, 5};
 const int ledPin =  0;
 const int startPin = 4;
+const int readyPin = 2;
 
 volatile bool raceStarted = false;
+volatile bool raceReady = true;
 unsigned long startTime = 0;
 volatile int carsFinished = 0;
 
@@ -26,12 +28,17 @@ void handleRoot() {
   for(int i=0; i<numLanes; i++)
     response += "Lane " + String(i) + ":" + String((laneTime[i] - startTime) / 1000.00) + "s<br>\n";
 
+  if (raceReady)
+    response += "<br>Race Ready<br>\n";
+  else
+    response += "<br>Race NOT Ready<br>\n";
+    
   if (raceStarted)
     response += "<br>Race Started<br><br>\n";
   else
     response += "<br>Race Stopped<br><br>\n";
     
-  response += "<a href='/NewRace'>NEW RACE</a> - <a href='/EndRace'>END RACE</a> - <a href='/'>REFRESH</a>";
+  response += "<a href='/ReadyRace'>READY RACE</a> - <a href='/NewRace'>NEW RACE</a> - <a href='/EndRace'>END RACE</a> - <a href='/'>REFRESH</a>";
   response += "</font></BODY></HTML>";
   server.send(200, "text/html", response);
 }
@@ -55,6 +62,17 @@ void endRace() {
 
 void apiEndRace() {
   finishAll();
+  server.send(200, "application/json", "");
+}
+
+void readyRace() {
+  readyReadyRace();
+  server.sendHeader("Location", "/", true);
+  server.send(307, "text/plain", "");
+}
+
+void apiReadyRace() {
+  readyReadyRace();
   server.send(200, "application/json", "");
 }
 
@@ -107,8 +125,10 @@ void setup() {
   server.on("/", handleRoot);
   server.on("/NewRace", newRace);
   server.on("/EndRace", endRace);
+  server.on("/ReadyRace", readyRace);
   server.on("/api/NewRace", apiNewRace);
   server.on("/api/EndRace", apiEndRace);
+  server.on("/api/ReadyRace", apiReadyRace);
   server.on("/api/Results", apiResults);
   
   server.begin();
@@ -116,6 +136,7 @@ void setup() {
   
   // initialize the LED pin as an output:
   pinMode(ledPin, OUTPUT);
+  pinMode(readyPin, OUTPUT);
     
   // initialize the lane pins as inputs
   pinMode(lanePin[0], INPUT_PULLUP);
@@ -137,17 +158,21 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(startPin), startRace, FALLING);
   
   digitalWrite(ledPin, HIGH); // Turn LED OFF (it is opposite)  
+  digitalWrite(readyPin, LOW);
 }
 
 void loop() {
   server.handleClient();
 }
 
+
 void startRace(){
-  if (!raceStarted){
+  if (!raceStarted && raceReady){
     digitalWrite(ledPin, LOW); // Turn LED ON - race is running
+    digitalWrite(readyPin, HIGH);
     startTime = millis();
     raceStarted = true;
+    raceReady = false;
     
     carsFinished = 0;
     for (int i=0; i<numLanes; i++){
@@ -157,6 +182,11 @@ void startRace(){
 
     Serial.println("Race started.");
   }
+}
+
+void readyReadyRace() {
+  raceReady = true;
+  digitalWrite(readyPin, LOW);  
 }
 
 void finish(int lane){
