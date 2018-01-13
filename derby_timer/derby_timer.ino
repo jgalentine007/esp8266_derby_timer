@@ -2,17 +2,15 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <Wire.h>
-#include "Adafruit_LEDBackpack.h"
-#include "Adafruit_GFX.h"
 
-const char *ssid = "Derby";
-const char *password = "derbytimer";
+const char *ssid = "Vzg";
+const char *password = "freedom34";
 ESP8266WebServer server(80);
 
 const int numLanes = 4;
-const int lanePin[] = {14, 12, 13, 15};
+const int lanePin[] = {14, 12, 13, 5};
 const int ledPin =  0;
-const int piezoPin = 2;   // disconnect from ground when uploading via toggle switch
+const int startPin = 4;
 
 volatile bool raceStarted = false;
 unsigned long startTime = 0;
@@ -21,8 +19,6 @@ volatile int carsFinished = 0;
 volatile unsigned long laneTime[numLanes];
 volatile bool laneFinished[numLanes];
 volatile int finishedOrder[numLanes];
-
-Adafruit_AlphaNum4 alpha4 = Adafruit_AlphaNum4();
 
 void handleRoot() {
   String response = "<HTML><BODY><font size=\"6\">\n";
@@ -35,7 +31,7 @@ void handleRoot() {
   else
     response += "<br>Race Stopped<br><br>\n";
     
-  response += "<a href='/NewRace'>NEW RACE</a> - <a href='/'>REFRESH</a>";
+  response += "<a href='/NewRace'>NEW RACE</a> - <a href='/EndRace'>END RACE</a> - <a href='/'>REFRESH</a>";
   response += "</font></BODY></HTML>";
   server.send(200, "text/html", response);
 }
@@ -48,6 +44,17 @@ void newRace() {
 
 void apiNewRace() {
   startRace();
+  server.send(200, "application/json", "");
+}
+
+void endRace() {
+  finishAll();
+  server.sendHeader("Location", "/", true);
+  server.send(307, "text/plain", "");
+}
+
+void apiEndRace() {
+  finishAll();
   server.send(200, "application/json", "");
 }
 
@@ -82,115 +89,73 @@ void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.print("Configuring access point...");
-  WiFi.softAP(ssid, password,1);
+  WiFi.begin(ssid,password);
   IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
+  Serial.println("");
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(ssid);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
   server.on("/", handleRoot);
   server.on("/NewRace", newRace);
+  server.on("/EndRace", endRace);
   server.on("/api/NewRace", apiNewRace);
+  server.on("/api/EndRace", apiEndRace);
   server.on("/api/Results", apiResults);
+  
   server.begin();
   Serial.println("HTTP server started");
   
   // initialize the LED pin as an output:
   pinMode(ledPin, OUTPUT);
-  pinMode(piezoPin, OUTPUT);
-  
-  // initialize the pushbutton pin as an input:
+    
+  // initialize the lane pins as inputs
   pinMode(lanePin[0], INPUT_PULLUP);
   pinMode(lanePin[1], INPUT_PULLUP);
   pinMode(lanePin[2], INPUT_PULLUP);
-  pinMode(lanePin[3], INPUT); // GPIO 15 has a PULL DOWN resistor attached to it (switch must be connected to +3v3)
-
+  pinMode(lanePin[3], INPUT_PULLUP);
+  pinMode(startPin, INPUT_PULLUP);
+  
   digitalWrite(lanePin[0], HIGH);
   digitalWrite(lanePin[1], HIGH);
   digitalWrite(lanePin[2], HIGH);
-
+  digitalWrite(lanePin[3], HIGH);
+  digitalWrite(startPin, HIGH);
+  
   attachInterrupt(digitalPinToInterrupt(lanePin[0]), finish0, FALLING);
   attachInterrupt(digitalPinToInterrupt(lanePin[1]), finish1, FALLING);
   attachInterrupt(digitalPinToInterrupt(lanePin[2]), finish2, FALLING);
-  attachInterrupt(digitalPinToInterrupt(lanePin[3]), finish3, FALLING); // GPIO 15 has a PULL DOWN resistor attached to it (switch must be connected to +3v3)
-
-  digitalWrite(ledPin, HIGH); // Turn LED OFF (it is opposite)  
-
-  alpha4.begin(0x70);  // pass in the address
-
-  alpha4.writeDigitRaw(3, 0x0);
-  alpha4.writeDigitRaw(0, 0xFFFF);
-  alpha4.writeDisplay();
-  delay(200);
-  alpha4.writeDigitRaw(0, 0x0);
-  alpha4.writeDigitRaw(1, 0xFFFF);
-  alpha4.writeDisplay();
-  delay(200);
-  alpha4.writeDigitRaw(1, 0x0);
-  alpha4.writeDigitRaw(2, 0xFFFF);
-  alpha4.writeDisplay();
-  delay(200);
-  alpha4.writeDigitRaw(2, 0x0);
-  alpha4.writeDigitRaw(3, 0xFFFF);
-  alpha4.writeDisplay();
-  delay(200);
+  attachInterrupt(digitalPinToInterrupt(lanePin[3]), finish3, FALLING); 
+  attachInterrupt(digitalPinToInterrupt(startPin), startRace, FALLING);
   
-  alpha4.clear();
-alpha4.writeDisplay();
-
+  digitalWrite(ledPin, HIGH); // Turn LED OFF (it is opposite)  
 }
 
 void loop() {
   server.handleClient();
 }
 
-void blinkLed(){
-  digitalWrite(ledPin, LOW);
-  delay(1000);
-  digitalWrite(ledPin, HIGH);
-  delay(1000);
-}
-
-void alpha4Clear(){
-  alpha4.writeDigitRaw(1, 0x0);
-  alpha4.writeDigitRaw(2, 0x0);
-  alpha4.writeDigitRaw(3, 0x0);
-  alpha4.writeDigitRaw(4, 0x0);
-  alpha4.writeDisplay();
-}
-
 void startRace(){
-  alpha4Clear();
-  // 3 2 1 go beep
-  //blinkLed();
-  //blinkLed();
-  //blinkLed();
-  //digitalWrite(ledPin, LOW);
-  alpha4.writeDigitAscii(0, '3');
-  alpha4.writeDisplay();
-  tone(piezoPin, 3700, 500);
-  delay(1000);
-  alpha4.writeDigitAscii(1, '2');
-  alpha4.writeDisplay();
-  tone(piezoPin, 3700, 500);
-  delay(1000);
-  alpha4.writeDigitAscii(2, '1');
-  alpha4.writeDisplay();
-  tone(piezoPin, 3700, 500);  
-  delay(1000);
-  startTime = millis();
-  alpha4.writeDigitRaw(0, 0x0);
-  alpha4.writeDigitAscii(1, 'G');
-  alpha4.writeDigitAscii(2, 'O');
-  alpha4.writeDigitRaw(3, 0x0);
-  alpha4.writeDisplay();
-  tone(piezoPin, 4100, 2000);
-  delay(2000);
-  alpha4Clear();  
-  raceStarted = true;
-  
-  carsFinished = 0;
-  for (int i=0; i<numLanes; i++){
-    laneTime[i] = startTime;
-    laneFinished[i] = false;
+  if (!raceStarted){
+    digitalWrite(ledPin, LOW); // Turn LED ON - race is running
+    startTime = millis();
+    raceStarted = true;
+    
+    carsFinished = 0;
+    for (int i=0; i<numLanes; i++){
+      laneTime[i] = startTime;
+      laneFinished[i] = false;
+    }
+
+    Serial.println("Race started.");
   }
 }
 
@@ -199,31 +164,36 @@ void finish(int lane){
     laneTime[lane] = millis();
     laneFinished[lane] = true;
     carsFinished++;
-   
-    alpha4.writeDigitAscii(lane, carsFinished + '0');    
-    alpha4.writeDisplay();
     finishedOrder[lane] = carsFinished;
+    char buffer[20];
+    sprintf(buffer, "Lane %d finished.", lane);
+    Serial.println(buffer);
+    
     if (carsFinished == numLanes){
       raceStarted = false;
       digitalWrite(ledPin, HIGH);
+      Serial.println("Race complete.");
     }
   }
 }
 
-void finish0() {
-  finish(2);
+void finishAll(){
+  for(int i=0; i<numLanes; i++)
+    finish(i);
 }
 
-void finish1() {
+void finish0() {
   finish(0);
 }
 
-void finish2() {
+void finish1() {
   finish(1);
+}
+
+void finish2() {
+  finish(2);
 }
 
 void finish3() {
   finish(3);
 }
-
-
