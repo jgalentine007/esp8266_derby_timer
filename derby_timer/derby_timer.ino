@@ -92,7 +92,15 @@ void apiResults() {
   else
     response += "false";
 
+  response += ", \"RaceReady\":";
+
+  if (raceReady)
+    response += "true";
+  else
+   response += "false";
+   
   response += "}";
+
   server.send(200, "application/json", response);
 }
 
