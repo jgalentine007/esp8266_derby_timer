@@ -2,8 +2,6 @@
 
 Build an affordable WiFi-controlled Pinewood Derby timer for your Cub Scout or Boy Scout pack! Use the optional windows race software or connect directly to the derby timer webserver over WiFi.
 
-![Screenshot](timer.jpg)
-
  ![timer1](images/timer1.jpg)
 
 Hardware Requirements:
@@ -15,7 +13,6 @@ Hardware Requirements:
 * Micro game switch with lever
 * Plenty of wire, solder, shrink tubing!
 * Wood
-
 
 Software Requirements:
 * Arduino IDE
@@ -29,8 +26,6 @@ You will need to build a simple platform for mounting electronics to. I used 1x3
 When mounting electronics I used plastic standoffs and small screw and bolts. You need to be careful not to cause an electrical short.
 
 ![timer2](images/timer2.jpg) ![timer3](images/timer3.jpg)
-
-
 
 ## Electronics ##
 
