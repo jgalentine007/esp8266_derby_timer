@@ -3,8 +3,8 @@
 #include <ESP8266WebServer.h>
 #include <Wire.h>
 
-const char *ssid = "Vzg";
-const char *password = "freedom34";
+const char *ssid = "myssid";
+const char *password = "mypassword";
 ESP8266WebServer server(80);
 
 const int numLanes = 4;
@@ -163,7 +163,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(lanePin[1]), finish1, FALLING);
   attachInterrupt(digitalPinToInterrupt(lanePin[2]), finish2, FALLING);
   attachInterrupt(digitalPinToInterrupt(lanePin[3]), finish3, FALLING); 
-  attachInterrupt(digitalPinToInterrupt(startPin), startRace, FALLING);
+  attachInterrupt(digitalPinToInterrupt(startPin), startRace, RISING);
   
   digitalWrite(ledPin, HIGH); // Turn LED OFF (it is opposite)  
   digitalWrite(readyPin, LOW);
